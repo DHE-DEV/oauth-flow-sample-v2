@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OAuth2 Token Generator - Passolution</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>OAuth2 Flow Demo - Passolution API</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         body {
@@ -12,14 +12,33 @@
             min-height: 100vh;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        .card {
-            border-radius: 15px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(10px);
+        .main-container {
             background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        .step-indicator {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        .step-title {
+            color: #667eea;
+            font-weight: 600;
+        }
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
         }
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(45deg, #667eea, #764ba2);
             border: none;
             border-radius: 10px;
             padding: 12px 30px;
@@ -28,117 +47,187 @@
         }
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
         }
-        .form-control {
+        .info-card {
+            background: linear-gradient(135deg, #f8f9ff, #e8f0ff);
+            border: 1px solid #e1e8ff;
             border-radius: 10px;
-            border: 2px solid #e9ecef;
-            padding: 12px 15px;
-            transition: all 0.3s ease;
         }
-        .form-control:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-        }
-        .header-icon {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            font-size: 3rem;
-        }
-        .info-box {
-            background: rgba(102, 126, 234, 0.1);
-            border-left: 4px solid #667eea;
-            border-radius: 5px;
-            padding: 15px;
+        .flow-step {
+            border-left: 3px solid #667eea;
+            padding-left: 20px;
             margin-bottom: 20px;
         }
     </style>
 </head>
 <body>
     <div class="container py-5">
-        <div class="row justify-content-center">
-            <div class="col-md-8 col-lg-6">
-                <div class="text-center mb-4">
-                    <i class="fas fa-key header-icon"></i>
-                    <h1 class="text-white mt-3 mb-2">OAuth2 Token Generator</h1>
-                    <p class="text-white-50">Generieren Sie OAuth2 Tokens für Passolution API</p>
-                </div>
+        <div class="main-container p-4 p-md-5">
+            <div class="text-center mb-5">
+                <h1 class="display-4 mb-3">
+                    <i class="fas fa-shield-alt text-primary"></i>
+                    OAuth2 Flow Demo
+                </h1>
+                <p class="lead text-muted">Passolution API Authorization</p>
+            </div>
 
-                <div class="card">
-                    <div class="card-body p-4">
-                        <div class="info-box">
-                            <h6 class="mb-2"><i class="fas fa-info-circle text-primary"></i> Information</h6>
-                            <p class="mb-0 small">Geben Sie Ihre Client-Daten ein, um OAuth2 Tokens zu generieren. Die Daten werden nur für diese Session verwendet und nicht gespeichert.</p>
-                        </div>
-
-                        <form action="{{ route('oauth.authorize') }}" method="POST">
-                            @csrf
-                            <div class="mb-3">
-                                <label for="client_id" class="form-label fw-semibold">
-                                    <i class="fas fa-id-card text-primary me-2"></i>Client ID
-                                </label>
-                                <input type="text" 
-                                       class="form-control @error('client_id') is-invalid @enderror" 
-                                       id="client_id" 
-                                       name="client_id" 
-                                       value="{{ old('client_id') }}"
-                                       placeholder="Ihre Client ID eingeben"
-                                       required>
-                                @error('client_id')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="card h-100 border-0 info-card">
+                        <div class="card-body">
+                            <h4 class="card-title text-primary mb-4">
+                                <i class="fas fa-info-circle"></i> OAuth2 Flow Schritte
+                            </h4>
+                            
+                            <div class="flow-step">
+                                <div class="d-flex align-items-center mb-2">
+                                    <div class="step-indicator me-3">1</div>
+                                    <h6 class="step-title mb-0">Client Credentials eingeben</h6>
+                                </div>
+                                <p class="text-muted small">Geben Sie Ihre Client ID und Client Secret ein.</p>
                             </div>
 
-                            <div class="mb-4">
-                                <label for="client_secret" class="form-label fw-semibold">
-                                    <i class="fas fa-lock text-primary me-2"></i>Client Secret
-                                </label>
-                                <input type="password" 
-                                       class="form-control @error('client_secret') is-invalid @enderror" 
-                                       id="client_secret" 
-                                       name="client_secret"
-                                       placeholder="Ihr Client Secret eingeben"
-                                       required>
-                                @error('client_secret')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                            <div class="flow-step">
+                                <div class="d-flex align-items-center mb-2">
+                                    <div class="step-indicator me-3">2</div>
+                                    <h6 class="step-title mb-0">Authorization Request</h6>
+                                </div>
+                                <p class="text-muted small">Weiterleitung zum Passolution Authorization Server.</p>
                             </div>
 
-                            <div class="d-grid">
-                                <button type="submit" class="btn btn-primary btn-lg">
-                                    <i class="fas fa-rocket me-2"></i>
-                                    OAuth2 Flow starten
-                                </button>
+                            <div class="flow-step">
+                                <div class="d-flex align-items-center mb-2">
+                                    <div class="step-indicator me-3">3</div>
+                                    <h6 class="step-title mb-0">User Authorization</h6>
+                                </div>
+                                <p class="text-muted small">Benutzer meldet sich an und genehmigt die Zugriffe.</p>
                             </div>
-                        </form>
 
-                        <div class="mt-4 pt-3 border-top">
-                            <h6 class="text-muted mb-2">Konfigurierte URLs:</h6>
-                            <div class="small text-muted">
-                                <div><strong>Auth URL:</strong> https://web.passolution.eu/en/oauth/authorize</div>
-                                <div><strong>Token URL:</strong> https://web.passolution.eu/en/oauth/token</div>
-                                <div><strong>Redirect URI:</strong> https://api-client-oauth2-v3.passolution.de/oauth/callback</div>
-                                <div><strong>API Base:</strong> https://api.passolution.eu/api/v2</div>
+                            <div class="flow-step">
+                                <div class="d-flex align-items-center mb-2">
+                                    <div class="step-indicator me-3">4</div>
+                                    <h6 class="step-title mb-0">Authorization Code</h6>
+                                </div>
+                                <p class="text-muted small">Rückleitung mit Authorization Code.</p>
+                            </div>
+
+                            <div class="flow-step">
+                                <div class="d-flex align-items-center mb-2">
+                                    <div class="step-indicator me-3">5</div>
+                                    <h6 class="step-title mb-0">Token Exchange</h6>
+                                </div>
+                                <p class="text-muted small">Austausch des Codes gegen Access Token.</p>
+                            </div>
+
+                            <div class="flow-step">
+                                <div class="d-flex align-items-center mb-2">
+                                    <div class="step-indicator me-3">6</div>
+                                    <h6 class="step-title mb-0">API Zugriff</h6>
+                                </div>
+                                <p class="text-muted small">Verwendung des Access Tokens für API-Aufrufe.</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                @if($errors->any())
-                    <div class="alert alert-danger mt-3">
-                        <h6><i class="fas fa-exclamation-triangle"></i> Fehler</h6>
-                        <ul class="mb-0">
-                            @foreach($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
+                <div class="col-lg-6">
+                    <div class="card h-100 border-0">
+                        <div class="card-body">
+                            <h4 class="card-title text-primary mb-4">
+                                <i class="fas fa-key"></i> Client Credentials
+                            </h4>
+
+                            <form action="{{ route('oauth.authorize') }}" method="POST">
+                                @csrf
+                                
+                                <div class="mb-4">
+                                    <label for="client_id" class="form-label fw-bold">
+                                        <i class="fas fa-id-card"></i> Client ID
+                                    </label>
+                                    <input type="text" 
+                                           class="form-control form-control-lg" 
+                                           id="client_id" 
+                                           name="client_id" 
+                                           placeholder="Ihre Client ID eingeben"
+                                           required>
+                                    <div class="form-text">Die von Passolution bereitgestellte Client ID</div>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label for="client_secret" class="form-label fw-bold">
+                                        <i class="fas fa-lock"></i> Client Secret
+                                    </label>
+                                    <input type="password" 
+                                           class="form-control form-control-lg" 
+                                           id="client_secret" 
+                                           name="client_secret" 
+                                           placeholder="Ihr Client Secret eingeben"
+                                           required>
+                                    <div class="form-text">Das von Passolution bereitgestellte Client Secret</div>
+                                </div>
+
+                                <div class="alert alert-info" role="alert">
+                                    <i class="fas fa-info-circle"></i>
+                                    <strong>Hinweis:</strong> Die Credentials werden nur für diese Session gespeichert und nach dem Token-Austausch automatisch gelöscht.
+                                </div>
+
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary btn-lg">
+                                        <i class="fas fa-rocket"></i>
+                                        OAuth2 Flow starten
+                                    </button>
+                                </div>
+                            </form>
+
+                            @if($errors->any())
+                                <div class="alert alert-danger mt-3" role="alert">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <strong>Fehler:</strong>
+                                    <ul class="mb-0 mt-2">
+                                        @foreach($errors->all() as $error)
+                                            <li>{{ $error }}</li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endif
+
+                            @if(session('success'))
+                                <div class="alert alert-success mt-3" role="alert">
+                                    <i class="fas fa-check-circle"></i>
+                                    {{ session('success') }}
+                                </div>
+                            @endif
+
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    <a href="{{ route('oauth.force-logout') }}" class="btn btn-outline-warning btn-sm w-100">
+                                        <i class="fas fa-sync-alt"></i> Session zurücksetzen
+                                    </a>
+                                </div>
+                                <div class="col-md-6">
+                                    <a href="{{ route('oauth.logout') }}" class="btn btn-outline-danger btn-sm w-100">
+                                        <i class="fas fa-sign-out-alt"></i> Passolution Logout
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                @endif
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fas fa-shield-alt"></i>
+                        <strong>Sicherheitshinweis:</strong> 
+                        Diese Demo-Anwendung dient nur zu Testzwecken. In einer Produktionsumgebung sollten Client Secrets niemals im Frontend verarbeitet oder angezeigt werden.
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
