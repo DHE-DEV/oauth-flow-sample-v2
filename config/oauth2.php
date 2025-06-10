@@ -16,7 +16,7 @@ return [
             'token_endpoint' => env('PASSOLUTION_TOKEN_URL', 'https://web.passolution.eu/en/oauth/token'),
             'redirect_uri' => env('PASSOLUTION_REDIRECT_URI', 'https://api-client-oauth2-example.passolution.de/oauth/callback'),
             'api_base_url' => env('PASSOLUTION_API_BASE_URL', 'https://api.passolution.eu/api/v2'),
-            'scopes' => ['read', 'write'],
+            'scopes' => [], // Keine Standard-Scopes
         ],
         'google' => [
             'authorization_endpoint' => 'https://accounts.google.com/o/oauth2/v2/auth',
@@ -56,7 +56,7 @@ return [
     'passolution' => [
         'client_id' => env('PASSOLUTION_CLIENT_ID'),
         'client_secret' => env('PASSOLUTION_CLIENT_SECRET'),
-        'default_scope' => 'read write',
+        'default_scope' => '', // Kein Standard-Scope
         'api_version' => 'v2',
     ],
 ];

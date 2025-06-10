@@ -45,11 +45,15 @@ class OAuth2FlowController extends Controller
             'response_type' => 'code',
             'client_id' => $request->client_id,
             'redirect_uri' => $request->redirect_uri,
-            'scope' => $request->scope ?? 'read write',
             'state' => $state,
             'code_challenge' => $codeChallenge,
             'code_challenge_method' => 'S256',
         ];
+
+        // Nur Scope hinzufügen wenn angegeben
+        if (!empty($request->scope)) {
+            $params['scope'] = $request->scope;
+        }
 
         $authUrl = $request->authorization_endpoint . '?' . http_build_query($params);
 
@@ -64,7 +68,7 @@ class OAuth2FlowController extends Controller
                 'state' => $state,
                 'code_verifier' => $codeVerifier,
                 'code_challenge' => $codeChallenge,
-                'scope' => $request->scope ?? 'read write',
+                'scope' => $request->scope ?? '',
                 'provider' => $this->detectProvider($request->authorization_endpoint),
             ]
         ]);

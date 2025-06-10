@@ -110,8 +110,9 @@
                     <input type="url" id="redirectUri" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50" value="https://api-client-oauth2-example.passolution.de/oauth/callback" readonly>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Scope</label>
-                    <input type="text" id="scope" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="read write" value="read write">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Scope (Optional)</label>
+                    <input type="text" id="scope" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Leer lassen für Standard-Berechtigungen" value="">
+                    <p class="text-xs text-gray-500 mt-1">Standard: Keine spezifischen Scopes (Passolution Standard-Berechtigungen)</p>
                 </div>
             </div>
             <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
