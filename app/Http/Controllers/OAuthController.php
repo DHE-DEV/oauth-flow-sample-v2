@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use App\Mail\TokenEmail;
+use Carbon\Carbon;
 
 class OAuthController extends Controller
 {
@@ -18,32 +19,6 @@ class OAuthController extends Controller
     public function index()
     {
         return view('oauth.index');
-    public function logout()
-    {
-        // Passolution Logout URL
-        $logoutUrl = 'https://web.passolution.eu/en/oauth/logout';
-        
-        // Optional: Redirect URI nach dem Logout
-        $redirectAfterLogout = url('/');
-        
-        $logoutParams = [
-            'post_logout_redirect_uri' => $redirectAfterLogout
-        ];
-        
-        $fullLogoutUrl = $logoutUrl . '?' . http_build_query($logoutParams);
-        
-        // Session-Daten löschen
-        session()->forget(['oauth_client_id', 'oauth_client_secret', 'oauth_state']);
-        
-        return redirect($fullLogoutUrl);
-    }
-
-    public function forceLogout()
-    {
-        // Session-Daten löschen
-        session()->forget(['oauth_client_id', 'oauth_client_secret', 'oauth_state']);
-        
-        return redirect()->route('oauth.index')->with('success', 'Session wurde zurückgesetzt. Starten Sie einen neuen OAuth2-Flow.');
     }
 
     public function authorize(Request $request)
@@ -72,7 +47,8 @@ class OAuthController extends Controller
             'redirect_uri' => $this->redirectUri,
             'scope' => '',
             'state' => $state,
-            'prompt' => 'login' // Erzwingt neuen Login
+            'prompt' => 'login', // Erzwingt neuen Login
+            'max_age' => '0' // Maximales Alter der Authentifizierung in Sekunden
         ];
 
         $authorizationUrl = $this->authUrl . '?' . http_build_query($params);
@@ -133,7 +109,7 @@ class OAuthController extends Controller
                 return view('oauth.tokens', [
                     'tokenData' => $tokenData,
                     'clientId' => $clientId,
-                    'timestamp' => now()->setTimezone('Europe/Berlin')->format('Y-m-d H:i:s')
+                    'timestamp' => Carbon::now('Europe/Berlin')->format('Y-m-d H:i:s')
                 ]);
             } else {
                 $responseBody = $response->body();
@@ -228,5 +204,33 @@ class OAuthController extends Controller
                 'message' => 'An error occurred: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    public function logout()
+    {
+        // Passolution Logout URL
+        $logoutUrl = 'https://web.passolution.eu/en/oauth/logout';
+        
+        // Optional: Redirect URI nach dem Logout
+        $redirectAfterLogout = url('/');
+        
+        $logoutParams = [
+            'post_logout_redirect_uri' => $redirectAfterLogout
+        ];
+        
+        $fullLogoutUrl = $logoutUrl . '?' . http_build_query($logoutParams);
+        
+        // Session-Daten löschen
+        session()->forget(['oauth_client_id', 'oauth_client_secret', 'oauth_state']);
+        
+        return redirect($fullLogoutUrl);
+    }
+
+    public function forceLogout()
+    {
+        // Session-Daten löschen
+        session()->forget(['oauth_client_id', 'oauth_client_secret', 'oauth_state']);
+        
+        return redirect()->route('oauth.index')->with('success', 'Session wurde zurückgesetzt. Starten Sie einen neuen OAuth2-Flow.');
     }
 }
