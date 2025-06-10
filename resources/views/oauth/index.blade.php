@@ -118,7 +118,7 @@
                             <div class="small text-muted">
                                 <div><strong>Auth URL:</strong> https://web.passolution.eu/en/oauth/authorize</div>
                                 <div><strong>Token URL:</strong> https://web.passolution.eu/en/oauth/token</div>
-                                <div><strong>Redirect URI:</strong> https://api-client-oauth2-example.passolution.de/oauth/callback</div>
+                                <div><strong>Redirect URI:</strong> https://api-client-oauth2-v3.passolution.de/oauth/callback</div>
                                 <div><strong>API Base:</strong> https://api.passolution.eu/api/v2</div>
                             </div>
                         </div>

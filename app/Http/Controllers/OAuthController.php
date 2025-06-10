@@ -12,7 +12,7 @@ class OAuthController extends Controller
 {
     private $authUrl = 'https://web.passolution.eu/en/oauth/authorize';
     private $tokenUrl = 'https://web.passolution.eu/en/oauth/token';
-    private $redirectUri = 'https://api-client-oauth2-example.passolution.de/oauth/callback';
+    private $redirectUri = 'https://api-client-oauth2-v3.passolution.de/oauth/callback';
     private $apiBaseUrl = 'https://api.passolution.eu/api/v2';
 
     public function index()
