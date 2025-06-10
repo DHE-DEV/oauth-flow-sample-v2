@@ -3,252 +3,295 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OAuth2 Tokens - Passolution</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>OAuth2 Tokens - Passolution API</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
     <style>
         body {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        .card {
-            border-radius: 15px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(10px);
+        .main-container {
             background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
         }
-        .token-card {
-            background: rgba(102, 126, 234, 0.05);
-            border: 2px solid rgba(102, 126, 234, 0.1);
-            border-radius: 10px;
-            position: relative;
-        }
-        .token-value {
+        .token-display {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
             font-family: 'Courier New', monospace;
-            font-size: 12px;
             word-break: break-all;
-            background: rgba(0, 0, 0, 0.05);
-            padding: 10px;
-            border-radius: 5px;
+            font-size: 14px;
             max-height: 150px;
             overflow-y: auto;
         }
         .copy-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(102, 126, 234, 0.8);
+            background: linear-gradient(45deg, #28a745, #20c997);
             border: none;
-            color: white;
             border-radius: 5px;
+            color: white;
             padding: 5px 10px;
-            cursor: pointer;
+            font-size: 12px;
             transition: all 0.3s ease;
         }
         .copy-btn:hover {
-            background: rgba(102, 126, 234, 1);
+            transform: translateY(-1px);
+            box-shadow: 0 5px 10px rgba(40, 167, 69, 0.3);
         }
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(45deg, #667eea, #764ba2);
             border: none;
             border-radius: 10px;
-            padding: 12px 30px;
+            padding: 10px 25px;
             font-weight: 600;
-            transition: all 0.3s ease;
-        }
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
         }
         .btn-success {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            border: none;
             border-radius: 10px;
-            padding: 12px 30px;
+            padding: 10px 25px;
             font-weight: 600;
         }
-        .form-control {
-            border-radius: 10px;
-            border: 2px solid #e9ecef;
-            padding: 12px 15px;
-        }
-        .success-animation {
-            animation: successPulse 0.6s ease-in-out;
-        }
-        @keyframes successPulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-        .header-icon {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+        .success-icon {
+            color: #28a745;
             font-size: 3rem;
+        }
+        .token-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s ease;
+        }
+        .token-card:hover {
+            transform: translateY(-2px);
+        }
+        .email-modal .modal-content {
+            border-radius: 15px;
+            border: none;
+        }
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
         }
     </style>
 </head>
 <body>
     <div class="container py-5">
-        <div class="row justify-content-center">
-            <div class="col-md-10 col-lg-8">
-                <div class="text-center mb-4">
-                    <i class="fas fa-check-circle header-icon"></i>
-                    <h1 class="text-white mt-3 mb-2">OAuth2 Tokens Generiert</h1>
-                    <p class="text-white-50">Ihre Tokens wurden erfolgreich erstellt</p>
+        <div class="main-container p-4 p-md-5">
+            <div class="text-center mb-5">
+                <i class="fas fa-check-circle success-icon mb-3"></i>
+                <h1 class="display-4 mb-3 text-success">OAuth2 Flow erfolgreich!</h1>
+                <p class="lead text-muted">Ihre Access Tokens wurden erfolgreich generiert</p>
+                <small class="text-muted">Erstellt am: {{ \Carbon\Carbon::parse($timestamp)->setTimezone('Europe/Berlin')->format('d.m.Y H:i:s') }} (MEZ/MESZ)</small>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card token-card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title text-primary">
+                                Client Information
+                            </h5>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Client ID:</label>
+                                <div class="token-display p-2">{{ $clientId }}</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Timestamp:</label>
+                                <div class="token-display p-2">{{ \Carbon\Carbon::parse($timestamp)->setTimezone('Europe/Berlin')->format('d.m.Y H:i:s') }} (MEZ/MESZ)</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="card">
-                    <div class="card-body p-4">
-                        <div class="row mb-4">
-                            <div class="col-md-6">
-                                <h6 class="text-muted">Client ID:</h6>
-                                <p class="fw-semibold">{{ $clientId }}</p>
-                            </div>
-                            <div class="col-md-6">
-                                <h6 class="text-muted">Generiert am:</h6>
-                                <p class="fw-semibold">{{ $timestamp }}</p>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-12 mb-4">
-                                <div class="token-card p-3">
-                                    <button class="copy-btn" onclick="copyToClipboard('access_token')">
-                                        <i class="fas fa-copy"></i> Kopieren
-                                    </button>
-                                    <h6 class="text-primary mb-2">
-                                        <i class="fas fa-key me-2"></i>Access Token
-                                    </h6>
-                                    <div class="token-value" id="access_token">{{ $tokenData['access_token'] ?? 'N/A' }}</div>
-                                    <div class="mt-2">
-                                        <small class="text-muted">
-                                            <strong>Type:</strong> {{ $tokenData['token_type'] ?? 'N/A' }} | 
-                                            <strong>Expires in:</strong> {{ $tokenData['expires_in'] ?? 'N/A' }} Sekunden
-                                        </small>
-                                    </div>
-                                </div>
-                            </div>
-
-                            @if(isset($tokenData['refresh_token']))
-                            <div class="col-12 mb-4">
-                                <div class="token-card p-3">
-                                    <button class="copy-btn" onclick="copyToClipboard('refresh_token')">
-                                        <i class="fas fa-copy"></i> Kopieren
-                                    </button>
-                                    <h6 class="text-success mb-2">
-                                        <i class="fas fa-sync-alt me-2"></i>Refresh Token
-                                    </h6>
-                                    <div class="token-value" id="refresh_token">{{ $tokenData['refresh_token'] }}</div>
-                                </div>
+                <div class="col-md-6">
+                    <div class="card token-card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title text-primary">
+                                <i class="fas fa-info-circle"></i> Token Information
+                            </h5>
+                            @if(isset($tokenData['token_type']))
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Token Type:</label>
+                                <div class="token-display p-2">{{ $tokenData['token_type'] }}</div>
                             </div>
                             @endif
-
+                            @if(isset($tokenData['expires_in']))
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Gültigkeitsdauer:</label>
+                                <div class="token-display p-2">{{ $tokenData['expires_in'] }} Sekunden (bis {{ \Carbon\Carbon::now()->addSeconds($tokenData['expires_in'])->setTimezone('Europe/Berlin')->format('d.m.Y H:i:s') }} MEZ/MESZ)</div>
+                            </div>
+                            @endif
                             @if(isset($tokenData['scope']))
-                            <div class="col-12 mb-4">
-                                <div class="token-card p-3">
-                                    <h6 class="text-info mb-2">
-                                        <i class="fas fa-list me-2"></i>Scope
-                                    </h6>
-                                    <div class="token-value">{{ $tokenData['scope'] }}</div>
-                                </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Scope:</label>
+                                <div class="token-display p-2">{{ $tokenData['scope'] ?: 'Keine spezifischen Scopes' }}</div>
                             </div>
                             @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-                            <div class="col-12 mb-4">
-                                <div class="token-card p-3">
-                                    <button class="copy-btn" onclick="copyToClipboard('full_response')">
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card token-card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="card-title text-primary mb-0">
+                                    Access Token
+                                </h5>
+                                <button class="copy-btn" onclick="copyToClipboard('access_token')">
+                                    <i class="fas fa-copy"></i> Kopieren
+                                </button>
+                            </div>
+                            <div id="access_token" class="token-display p-3">{{ $tokenData['access_token'] }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @if(isset($tokenData['refresh_token']))
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card token-card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="card-title text-primary mb-0">
+                                    Refresh Token
+                                </h5>
+                                <button class="copy-btn" onclick="copyToClipboard('refresh_token')">
+                                    <i class="fas fa-copy"></i> Kopieren
+                                </button>
+                            </div>
+                            <div id="refresh_token" class="token-display p-3">{{ $tokenData['refresh_token'] }}</div>
+                            @if(isset($tokenData['refresh_token_expires_in']))
+                            <div class="mt-3">
+                                <small class="text-muted">
+                                    <i class="fas fa-clock"></i> 
+                                    Refresh Token läuft ab: {{ \Carbon\Carbon::now()->addSeconds($tokenData['refresh_token_expires_in'])->setTimezone('Europe/Berlin')->format('d.m.Y H:i:s') }} (MEZ/MESZ)
+                                    <br>Gültigkeitsdauer: {{ $tokenData['refresh_token_expires_in'] }} Sekunden
+                                </small>
+                            </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endif
+
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card token-card">
+                        <div class="card-body">
+                            <h5 class="card-title text-primary">
+                                API Verwendung
+                            </h5>
+                            <p class="text-muted">So verwenden Sie den Access Token für API-Aufrufe:</p>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Base URL:</label>
+                                <div class="token-display p-2">https://api.passolution.eu/api/v2</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Authorization Header:</label>
+                                <div class="d-flex align-items-center">
+                                    <div id="auth_header" class="token-display p-2 flex-grow-1 me-2">Authorization: Bearer {{ $tokenData['access_token'] }}</div>
+                                    <button class="copy-btn" onclick="copyToClipboard('auth_header')">
                                         <i class="fas fa-copy"></i> Kopieren
                                     </button>
-                                    <h6 class="text-secondary mb-2">
-                                        <i class="fas fa-code me-2"></i>Vollständige Antwort (JSON)
-                                    </h6>
-                                    <div class="token-value" id="full_response">{{ json_encode($tokenData, JSON_PRETTY_PRINT) }}</div>
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
 
-                        <div class="border-top pt-4">
-                            <h5 class="mb-3"><i class="fas fa-paper-plane text-primary me-2"></i>Tokens per E-Mail senden</h5>
-                            <div class="row">
-                                <div class="col-md-8">
-                                    <input type="email" 
-                                           class="form-control" 
-                                           id="email_address" 
-                                           placeholder="E-Mail-Adresse eingeben"
-                                           required>
-                                </div>
-                                <div class="col-md-4">
-                                    <button type="button" 
-                                            class="btn btn-success w-100" 
-                                            onclick="sendTokensEmail()">
-                                        <i class="fas fa-envelope me-2"></i>Senden
-                                    </button>
-                                </div>
-                            </div>
-                            <div id="email_status" class="mt-2"></div>
-                        </div>
-
-                        <div class="text-center mt-4">
-                            <a href="{{ route('oauth.index') }}" class="btn btn-primary">
-                                <i class="fas fa-arrow-left me-2"></i>Neue Tokens generieren
-                            </a>
-                        </div>
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Sicherheitshinweis:</strong> 
+                        Bewahren Sie diese Tokens sicher auf und teilen Sie sie niemals öffentlich. 
+                        Verwenden Sie immer HTTPS für API-Aufrufe.
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#emailModal">
+                            <i class="fas fa-envelope"></i> Per E-Mail senden
+                        </button>
+                        <a href="{{ route('oauth.index') }}" class="btn btn-primary">
+                            <i class="fas fa-redo"></i> Neuen Flow starten
+                        </a>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Toast Notification -->
-    <div class="toast-container position-fixed bottom-0 end-0 p-3">
-        <div id="copyToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="toast-header">
-                <i class="fas fa-check-circle text-success me-2"></i>
-                <strong class="me-auto">Erfolgreich</strong>
-                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
-            </div>
-            <div class="toast-body">
-                Der Inhalt wurde in die Zwischenablage kopiert!
+    <!-- Email Modal -->
+    <div class="modal fade email-modal" id="emailModal" tabindex="-1" aria-labelledby="emailModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="emailModalLabel">
+                        <i class="fas fa-envelope"></i> Tokens per E-Mail senden
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="emailForm">
+                        <div class="mb-3">
+                            <label for="email" class="form-label">E-Mail-Adresse:</label>
+                            <input type="email" class="form-control" id="email" name="email" required 
+                                   placeholder="empfaenger@example.com">
+                        </div>
+                        <div class="alert alert-info" role="alert">
+                            <i class="fas fa-info-circle"></i>
+                            Die Tokens werden sicher formatiert und an die angegebene E-Mail-Adresse gesendet.
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                    <button type="button" class="btn btn-success" onclick="sendEmail()">
+                        <i class="fas fa-paper-plane"></i> E-Mail senden
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // CSRF Token Setup
-        window.Laravel = {
-            csrfToken: document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        };
-
         function copyToClipboard(elementId) {
             const element = document.getElementById(elementId);
-            const text = element.textContent;
+            const text = element.innerText;
             
             navigator.clipboard.writeText(text).then(function() {
-                // Show success animation
-                element.parentElement.classList.add('success-animation');
+                // Visual feedback
+                const btn = event.target.closest('button');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check"></i> Kopiert!';
+                btn.style.background = 'linear-gradient(45deg, #28a745, #20c997)';
                 
-                // Show toast
-                const toast = new bootstrap.Toast(document.getElementById('copyToast'));
-                toast.show();
-                
-                // Remove animation class after animation completes
-                setTimeout(() => {
-                    element.parentElement.classList.remove('success-animation');
-                }, 600);
+                setTimeout(function() {
+                    btn.innerHTML = originalText;
+                    btn.style.background = 'linear-gradient(45deg, #28a745, #20c997)';
+                }, 2000);
             }).catch(function(err) {
                 console.error('Fehler beim Kopieren: ', err);
                 alert('Fehler beim Kopieren in die Zwischenablage');
             });
         }
 
-        function sendTokensEmail() {
-            const email = document.getElementById('email_address').value;
-            const statusDiv = document.getElementById('email_status');
-            
+        function sendEmail() {
+            const email = document.getElementById('email').value;
             if (!email) {
-                statusDiv.innerHTML = '<div class="alert alert-warning"><i class="fas fa-exclamation-triangle me-2"></i>Bitte geben Sie eine E-Mail-Adresse ein.</div>';
+                alert('Bitte geben Sie eine E-Mail-Adresse ein.');
                 return;
             }
 
@@ -256,48 +299,31 @@
             const clientId = @json($clientId);
             const timestamp = @json($timestamp);
 
-            // Show loading state
-            statusDiv.innerHTML = '<div class="alert alert-info"><i class="fas fa-spinner fa-spin me-2"></i>E-Mail wird gesendet...</div>';
+            const formData = new FormData();
+            formData.append('email', email);
+            formData.append('token_data', JSON.stringify(tokenData));
+            formData.append('client_id', clientId);
+            formData.append('timestamp', timestamp);
+            formData.append('_token', '{{ csrf_token() }}');
 
             fetch('{{ route("oauth.send-tokens") }}', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': window.Laravel.csrfToken
-                },
-                body: JSON.stringify({
-                    email: email,
-                    token_data: JSON.stringify(tokenData),
-                    client_id: clientId,
-                    timestamp: timestamp
-                })
+                body: formData
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    statusDiv.innerHTML = '<div class="alert alert-success"><i class="fas fa-check-circle me-2"></i>' + data.message + '</div>';
-                    document.getElementById('email_address').value = '';
+                    alert('E-Mail erfolgreich gesendet an: ' + email);
+                    bootstrap.Modal.getInstance(document.getElementById('emailModal')).hide();
                 } else {
-                    statusDiv.innerHTML = '<div class="alert alert-danger"><i class="fas fa-exclamation-circle me-2"></i>' + data.message + '</div>';
+                    alert('Fehler beim Senden der E-Mail: ' + data.message);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                statusDiv.innerHTML = '<div class="alert alert-danger"><i class="fas fa-exclamation-circle me-2"></i>Fehler beim Senden der E-Mail.</div>';
+                alert('Ein Fehler ist aufgetreten.');
             });
         }
-
-        // Auto-hide alerts after 5 seconds
-        setTimeout(() => {
-            const alerts = document.querySelectorAll('.alert');
-            alerts.forEach(alert => {
-                if (alert.classList.contains('alert-success') || alert.classList.contains('alert-info')) {
-                    alert.style.transition = 'opacity 0.5s';
-                    alert.style.opacity = '0';
-                    setTimeout(() => alert.remove(), 500);
-                }
-            });
-        }, 5000);
     </script>
 </body>
 </html>

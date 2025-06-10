@@ -36,6 +36,7 @@ class OAuthController extends Controller
             'oauth_client_secret' => $clientSecret
         ]);
 
+        // Generate new state for each authorization request
         $state = bin2hex(random_bytes(16));
         session(['oauth_state' => $state]);
 
@@ -73,7 +74,16 @@ class OAuthController extends Controller
             return view('oauth.error', ['error' => 'Client credentials not found in session']);
         }
 
+        // Clear the state after use to prevent reuse
+        session()->forget('oauth_state');
+
         try {
+            Log::info('Attempting token exchange', [
+                'client_id' => $clientId,
+                'code_length' => strlen($code),
+                'redirect_uri' => $this->redirectUri
+            ]);
+
             $response = Http::asForm()->post($this->tokenUrl, [
                 'grant_type' => 'authorization_code',
                 'client_id' => $clientId,
@@ -82,21 +92,47 @@ class OAuthController extends Controller
                 'redirect_uri' => $this->redirectUri,
             ]);
 
+            Log::info('Token response received', [
+                'status' => $response->status(),
+                'headers' => $response->headers()
+            ]);
+
             if ($response->successful()) {
                 $tokenData = $response->json();
+                
+                // Clear session data after successful token exchange
+                session()->forget(['oauth_client_id', 'oauth_client_secret']);
                 
                 return view('oauth.tokens', [
                     'tokenData' => $tokenData,
                     'clientId' => $clientId,
-                    'timestamp' => now()->format('Y-m-d H:i:s')
+                    'timestamp' => now()->setTimezone('Europe/Berlin')->format('Y-m-d H:i:s')
                 ]);
             } else {
-                Log::error('Token exchange failed', ['response' => $response->body()]);
-                return view('oauth.error', ['error' => 'Failed to exchange authorization code for tokens']);
+                $responseBody = $response->body();
+                $statusCode = $response->status();
+                
+                Log::error('Token exchange failed', [
+                    'status' => $statusCode,
+                    'response' => $responseBody,
+                    'client_id' => $clientId
+                ]);
+                
+                // Parse error response if it's JSON
+                $errorData = json_decode($responseBody, true);
+                $errorMessage = $errorData['error_description'] ?? 'Failed to exchange authorization code for tokens';
+                
+                return view('oauth.error', [
+                    'error' => $errorMessage,
+                    'details' => "HTTP {$statusCode}: {$responseBody}"
+                ]);
             }
         } catch (\Exception $e) {
-            Log::error('Exception during token exchange', ['error' => $e->getMessage()]);
-            return view('oauth.error', ['error' => 'An error occurred during token exchange']);
+            Log::error('Exception during token exchange', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return view('oauth.error', ['error' => 'An error occurred during token exchange: ' . $e->getMessage()]);
         }
     }
 
@@ -127,6 +163,42 @@ class OAuthController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to send email: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function refreshToken(Request $request)
+    {
+        $request->validate([
+            'refresh_token' => 'required|string',
+            'client_id' => 'required|string',
+            'client_secret' => 'required|string',
+        ]);
+
+        try {
+            $response = Http::asForm()->post($this->tokenUrl, [
+                'grant_type' => 'refresh_token',
+                'refresh_token' => $request->input('refresh_token'),
+                'client_id' => $request->input('client_id'),
+                'client_secret' => $request->input('client_secret'),
+            ]);
+
+            if ($response->successful()) {
+                return response()->json([
+                    'success' => true,
+                    'data' => $response->json()
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to refresh token',
+                    'error' => $response->body()
+                ], 400);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred: ' . $e->getMessage()
             ], 500);
         }
     }
