@@ -172,12 +172,23 @@
                                     <strong>Hinweis:</strong> Die Credentials werden nur für diese Session gespeichert und nach dem Token-Austausch automatisch gelöscht.
                                 </div>
 
-                                <div class="d-grid">
+                                <div class="d-grid mb-3">
                                     <button type="submit" class="btn btn-primary btn-lg">
                                         <i class="fas fa-rocket"></i>
                                         OAuth2 Flow starten
                                     </button>
                                 </div>
+                                
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-outline-primary" formaction="/oauth/authorize-force">
+                                        <i class="fas fa-shield-alt"></i>
+                                        Mit erzwungener Re-Autorisierung starten
+                                    </button>
+                                </div>
+                                <small class="text-muted text-center mt-2">
+                                    <i class="fas fa-info-circle"></i>
+                                    "Erzwungene Re-Autorisierung" fordert Benutzer-Zustimmung erneut an
+                                </small>
                             </form>
 
                             @if($errors->any())
@@ -199,17 +210,23 @@
                                 </div>
                             @endif
 
-                            <div class="row mt-3">
-                                <div class="col-md-6">
-                                    <a href="{{ route('oauth.force-logout') }}" class="btn btn-outline-warning btn-sm w-100">
-                                        <i class="fas fa-sync-alt"></i> Session zurücksetzen
-                                    </a>
+                            <div class="mt-3">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <button type="button" class="btn btn-outline-warning btn-sm w-100 mb-2" onclick="clearSession()">
+                                            <i class="fas fa-sync-alt"></i> Session zurücksetzen
+                                        </button>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <a href="/oauth/logout" class="btn btn-outline-danger btn-sm w-100 mb-2">
+                                            <i class="fas fa-sign-out-alt"></i> Passolution Logout
+                                        </a>
+                                    </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <a href="{{ route('oauth.logout') }}" class="btn btn-outline-danger btn-sm w-100">
-                                        <i class="fas fa-sign-out-alt"></i> Passolution Logout
-                                    </a>
-                                </div>
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle"></i>
+                                    Bei Login-Problemen: Logout verwenden oder Inkognito-Modus
+                                </small>
                             </div>
                         </div>
                     </div>
@@ -229,5 +246,19 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function clearSession() {
+            // Browser Session Storage löschen
+            sessionStorage.clear();
+            localStorage.clear();
+            
+            // Cookies für diese Domain löschen
+            document.cookie.split(";").forEach(function(c) { 
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+            });
+            
+            alert('Browser-Session wurde zurückgesetzt. Für einen kompletten Reset öffnen Sie die Seite im Inkognito-Modus.');
+        }
+    </script>
 </body>
 </html>
