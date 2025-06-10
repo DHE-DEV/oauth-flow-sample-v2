@@ -196,31 +196,51 @@ class OAuth2FlowController extends Controller
             } else {
                 Log::info('OAuth2: Making real token exchange');
                 
-                // EINFACHE Token-Request ohne PKCE
+                // Erste Versuch: Basic Authentication (Standard)
                 $tokenData = [
                     'grant_type' => 'authorization_code',
-                    'client_id' => $flowData['client_id'],
-                    'client_secret' => $flowData['client_secret'],
                     'code' => $flowData['authorization_code'],
                     'redirect_uri' => $flowData['redirect_uri'],
                 ];
 
-                Log::info('OAuth2: Token request payload', [
+                $basicAuth = base64_encode($flowData['client_id'] . ':' . $flowData['client_secret']);
+
+                Log::info('OAuth2: Trying Basic Auth first', [
                     'endpoint' => $flowData['token_endpoint'],
                     'client_id' => $flowData['client_id'],
                     'redirect_uri' => $flowData['redirect_uri'],
-                    'code_length' => strlen($flowData['authorization_code']),
-                    'has_client_secret' => !empty($flowData['client_secret'])
+                    'auth_method' => 'Basic Authentication'
                 ]);
 
-                // HTTP Request
                 $response = Http::asForm()
                     ->withHeaders([
                         'Accept' => 'application/json',
-                        'User-Agent' => 'OAuth2-Flow-Visualizer/1.0'
+                        'User-Agent' => 'OAuth2-Flow-Visualizer/1.0',
+                        'Authorization' => 'Basic ' . $basicAuth
                     ])
                     ->timeout(30)
                     ->post($flowData['token_endpoint'], $tokenData);
+
+                // Falls Basic Auth fehlschlägt, versuche Body-Parameter
+                if (!$response->successful() && $response->status() === 401) {
+                    Log::info('OAuth2: Basic Auth failed, trying client credentials in body');
+                    
+                    $tokenDataWithCredentials = [
+                        'grant_type' => 'authorization_code',
+                        'client_id' => $flowData['client_id'],
+                        'client_secret' => $flowData['client_secret'],
+                        'code' => $flowData['authorization_code'],
+                        'redirect_uri' => $flowData['redirect_uri'],
+                    ];
+
+                    $response = Http::asForm()
+                        ->withHeaders([
+                            'Accept' => 'application/json',
+                            'User-Agent' => 'OAuth2-Flow-Visualizer/1.0'
+                        ])
+                        ->timeout(30)
+                        ->post($flowData['token_endpoint'], $tokenDataWithCredentials);
+                }
 
                 Log::info('OAuth2: Token response received', [
                     'status' => $response->status(),
