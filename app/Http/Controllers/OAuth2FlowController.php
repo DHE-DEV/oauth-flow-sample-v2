@@ -48,8 +48,9 @@ class OAuth2FlowController extends Controller
                 'client_id' => $request->client_id,
                 'redirect_uri' => $request->redirect_uri,
                 'state' => $state,
-                'code_challenge' => $codeChallenge,
-                'code_challenge_method' => 'S256',
+                // Temporär PKCE deaktivieren für Passolution Test
+                // 'code_challenge' => $codeChallenge,
+                // 'code_challenge_method' => 'S256',
             ];
 
             // Nur Scope hinzufügen wenn angegeben
@@ -210,8 +211,12 @@ class OAuth2FlowController extends Controller
                     'client_secret' => $flowData['client_secret'],
                     'code' => $flowData['authorization_code'],
                     'redirect_uri' => $flowData['redirect_uri'],
-                    'code_verifier' => $flowData['code_verifier'],
                 ];
+
+                // Nur code_verifier hinzufügen wenn PKCE verwendet wird
+                if (!empty($flowData['code_verifier'])) {
+                    $tokenData['code_verifier'] = $flowData['code_verifier'];
+                }
 
                 Log::info('OAuth2: Token request data', [
                     'endpoint' => $flowData['token_endpoint'],
@@ -219,18 +224,27 @@ class OAuth2FlowController extends Controller
                     'client_id' => $tokenData['client_id'],
                     'redirect_uri' => $tokenData['redirect_uri'],
                     'has_code' => !empty($tokenData['code']),
+                    'code_length' => strlen($tokenData['code']),
                     'has_code_verifier' => !empty($tokenData['code_verifier']),
-                    'has_client_secret' => !empty($tokenData['client_secret'])
+                    'has_client_secret' => !empty($tokenData['client_secret']),
+                    'all_params' => array_keys($tokenData)
                 ]);
 
                 // Spezielle Header für Passolution
                 $headers = [
                     'Accept' => 'application/json',
-                    'User-Agent' => 'OAuth2-Flow-Visualizer/1.0'
+                    'User-Agent' => 'OAuth2-Flow-Visualizer/1.0',
+                    'Content-Type' => 'application/x-www-form-urlencoded'
                 ];
 
+                // Für Passolution: Möglicherweise Basic Auth statt client_secret im Body
                 if (str_contains($flowData['token_endpoint'], 'passolution')) {
-                    $headers['Content-Type'] = 'application/x-www-form-urlencoded';
+                    // Versuche beide Methoden - zuerst mit client_secret im Body
+                    Log::info('OAuth2: Using Passolution-specific configuration');
+                } else {
+                    // Für andere Provider könnte Basic Auth erforderlich sein
+                    $headers['Authorization'] = 'Basic ' . base64_encode($flowData['client_id'] . ':' . $flowData['client_secret']);
+                    unset($tokenData['client_secret']);
                 }
 
                 $response = Http::asForm()
