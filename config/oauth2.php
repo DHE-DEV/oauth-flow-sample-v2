@@ -14,7 +14,7 @@ return [
         'passolution' => [
             'authorization_endpoint' => env('PASSOLUTION_AUTH_URL', 'https://web.passolution.eu/en/oauth/authorize'),
             'token_endpoint' => env('PASSOLUTION_TOKEN_URL', 'https://web.passolution.eu/en/oauth/token'),
-            'redirect_uri' => env('PASSOLUTION_REDIRECT_URI', 'https://api-client-oauth2-example.passolution.de/oauth/callback'),
+            'redirect_uri' => env('PASSOLUTION_REDIRECT_URI', 'https://api-client-oauth2-v2.passolution.de/oauth/callback'),
             'api_base_url' => env('PASSOLUTION_API_BASE_URL', 'https://api.passolution.eu/api/v2'),
             'scopes' => [], // Keine Standard-Scopes
         ],

@@ -108,7 +108,7 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Redirect URI *</label>
                     <select id="redirectUri" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <option value="https://api-client-oauth2-example.passolution.de/oauth/callback">api-client-oauth2-example.passolution.de/oauth/callback</option>
+                        <option value="https://api-client-oauth2-v2.passolution.de/oauth/callback">api-client-oauth2-v2.passolution.de/oauth/callback</option>
                         <option value="https://api-client-oauth2-v2.passolution.de/oauth/callback">api-client-oauth2-v2.passolution.de/oauth/callback</option>
                         <option value="https://api-client-oauth2-v2.passolution.de">api-client-oauth2-v2.passolution.de (Root)</option>
                         <option value="http://localhost:8000/oauth/callback">localhost:8000/oauth/callback (Local)</option>
