@@ -85,7 +85,7 @@
                 <i class="fas fa-check-circle success-icon mb-3"></i>
                 <h1 class="display-4 mb-3 text-success">OAuth2 Flow erfolgreich!</h1>
                 <p class="lead text-muted">Ihre Access Tokens wurden erfolgreich generiert</p>
-                <small class="text-muted">Erstellt am: {{ \Carbon\Carbon::parse($timestamp)->setTimezone('Europe/Berlin')->format('d.m.Y H:i:s') }} (MEZ/MESZ)</small>
+                <small class="text-muted">Erstellt am: {{ $timestamp }} (MEZ/MESZ)</small>
             </div>
 
             <div class="row mb-4">
