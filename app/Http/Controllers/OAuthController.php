@@ -131,7 +131,7 @@ class OAuthController extends Controller
                 return view('oauth.tokens', [
                     'tokenData' => $tokenData,
                     'clientId' => $clientId,
-                    'timestamp' => Carbon::now('Europe/Berlin')->format('Y-m-d H:i:s')
+                    'timestamp' => Carbon::now('Europe/Berlin')->format('d.m.Y H:i:s')
                 ]);
             } else {
                 $responseBody = $response->body();

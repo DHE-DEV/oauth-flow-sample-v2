@@ -93,7 +93,7 @@
                     <div class="card token-card h-100">
                         <div class="card-body">
                             <h5 class="card-title text-primary">
-                                Client Information
+                                <i class="fas fa-id-card"></i> Client Information
                             </h5>
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Client ID:</label>
@@ -122,7 +122,7 @@
                             @if(isset($tokenData['expires_in']))
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Gültigkeitsdauer:</label>
-                                <div class="token-display p-2">{{ $tokenData['expires_in'] }} Sekunden (bis {{ \Carbon\Carbon::now()->addSeconds($tokenData['expires_in'])->setTimezone('Europe/Berlin')->format('d.m.Y H:i:s') }} MEZ/MESZ)</div>
+                                <div class="token-display p-2">{{ $tokenData['expires_in'] }} Sekunden (bis {{ \Carbon\Carbon::now()->addSeconds($tokenData['expires_in'])->setTimezone('Europe/Berlin')->format('d.m.Y H:i:s') }} (MEZ/MESZ))</div>
                             </div>
                             @endif
                             @if(isset($tokenData['scope']))
@@ -142,7 +142,7 @@
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h5 class="card-title text-primary mb-0">
-                                    Access Token
+                                    <i class="fas fa-key"></i> Access Token
                                 </h5>
                                 <button class="copy-btn" onclick="copyToClipboard('access_token')">
                                     <i class="fas fa-copy"></i> Kopieren
@@ -161,7 +161,7 @@
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h5 class="card-title text-primary mb-0">
-                                    Refresh Token
+                                    <i class="fas fa-redo"></i> Refresh Token
                                 </h5>
                                 <button class="copy-btn" onclick="copyToClipboard('refresh_token')">
                                     <i class="fas fa-copy"></i> Kopieren
@@ -188,7 +188,7 @@
                     <div class="card token-card">
                         <div class="card-body">
                             <h5 class="card-title text-primary">
-                                API Verwendung
+                                <i class="fas fa-code"></i> API Verwendung
                             </h5>
                             <p class="text-muted">So verwenden Sie den Access Token für API-Aufrufe:</p>
                             <div class="mb-3">
@@ -226,6 +226,18 @@
                         <a href="{{ route('oauth.index') }}" class="btn btn-primary">
                             <i class="fas fa-redo"></i> Neuen Flow starten
                         </a>
+                        <div class="btn-group" role="group">
+                            <a href="/oauth/force-logout" class="btn btn-outline-warning btn-sm">
+                                <i class="fas fa-sync-alt"></i> Session Reset
+                            </a>
+                            <a href="/oauth/logout" class="btn btn-outline-danger btn-sm">
+                                <i class="fas fa-sign-out-alt"></i> OAuth Logout
+                            </a>
+                        </div>
+                        <small class="text-muted text-center">
+                            <i class="fas fa-info-circle"></i>
+                            OAuth Logout erzwingt neue Anmeldung bei Passolution
+                        </small>
                     </div>
                 </div>
             </div>

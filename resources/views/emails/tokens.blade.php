@@ -110,7 +110,7 @@
         <div class="info-section">
             <h3>📋 Client Information</h3>
             <p><strong>Client ID:</strong> {{ $clientId }}</p>
-            <p><strong>Erstellt am:</strong> {{ \Carbon\Carbon::parse($timestamp)->setTimezone('Europe/Berlin')->format('d.m.Y H:i:s') }} (MEZ/MESZ)</p>
+            <p><strong>Erstellt am:</strong> {{ isset($timestamp) ? \Carbon\Carbon::parse($timestamp)->setTimezone('Europe/Berlin')->format('d.m.Y H:i:s') : 'Unbekannt' }} (MEZ/MESZ)</p>
         </div>
 
         <div class="info-section">
