@@ -43,7 +43,7 @@ class OAuthController extends Controller
             'response_type' => 'code',
             'client_id' => $clientId,
             'redirect_uri' => $this->redirectUri,
-            'scope' => 'read write',
+            'scope' => '',
             'state' => $state
         ];
 
