@@ -101,7 +101,7 @@
                             </div>
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Timestamp:</label>
-                                <div class="token-display p-2">{{ \Carbon\Carbon::parse($timestamp)->setTimezone('Europe/Berlin')->format('d.m.Y H:i:s') }} (MEZ/MESZ)</div>
+                                <div class="token-display p-2">{{ $timestamp }} (MEZ/MESZ)</div>
                             </div>
                         </div>
                     </div>

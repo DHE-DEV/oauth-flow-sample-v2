@@ -108,20 +108,20 @@
         </div>
 
         <div class="info-section">
-            <h3>📋 Client Information</h3>
+            <h3>Client Information</h3>
             <p><strong>Client ID:</strong> {{ $clientId }}</p>
-            <p><strong>Erstellt am:</strong> {{ isset($timestamp) ? \Carbon\Carbon::parse($timestamp)->setTimezone('Europe/Berlin')->format('d.m.Y H:i:s') : 'Unbekannt' }} (MEZ/MESZ)</p>
+            <p><strong>Erstellt am:</strong> {{ isset($timestamp) ? $timestamp : 'Unbekannt' }} (MEZ/MESZ)</p>
         </div>
 
         <div class="info-section">
-            <h3>🎯 Access Token</h3>
+            <h3>Access Token</h3>
             <div class="token-container">
                 <div class="token-label">Access Token:</div>
                 <div class="token-value">{{ $tokenData['access_token'] }}</div>
             </div>
             @if(isset($tokenData['expires_in']))
             <div class="expires-info">
-                <strong>⏰ Gültigkeitsdauer:</strong> {{ $tokenData['expires_in'] }} Sekunden
+                <strong>Gültigkeitsdauer:</strong> {{ $tokenData['expires_in'] }} Sekunden
                 <br><strong>Läuft ab am:</strong> {{ \Carbon\Carbon::now()->addSeconds($tokenData['expires_in'])->setTimezone('Europe/Berlin')->format('d.m.Y H:i:s') }} (MEZ/MESZ)
             </div>
             @endif
@@ -129,14 +129,14 @@
 
         @if(isset($tokenData['refresh_token']))
         <div class="info-section">
-            <h3>🔄 Refresh Token</h3>
+            <h3>Refresh Token</h3>
             <div class="token-container">
                 <div class="token-label">Refresh Token:</div>
                 <div class="token-value">{{ $tokenData['refresh_token'] }}</div>
             </div>
             @if(isset($tokenData['refresh_token_expires_in']))
             <div class="expires-info">
-                <strong>⏰ Refresh Token Gültigkeitsdauer:</strong> {{ $tokenData['refresh_token_expires_in'] }} Sekunden
+                <strong>Refresh Token Gültigkeitsdauer:</strong> {{ $tokenData['refresh_token_expires_in'] }} Sekunden
                 <br><strong>Läuft ab am:</strong> {{ \Carbon\Carbon::now()->addSeconds($tokenData['refresh_token_expires_in'])->setTimezone('Europe/Berlin')->format('d.m.Y H:i:s') }} (MEZ/MESZ)
             </div>
             @endif
@@ -145,14 +145,14 @@
 
         @if(isset($tokenData['scope']))
         <div class="info-section">
-            <h3>🎯 Scope</h3>
+            <h3>Scope</h3>
             <p><code>{{ $tokenData['scope'] ?: 'Keine spezifischen Scopes' }}</code></p>
         </div>
         @endif
 
         @if(isset($tokenData['token_type']))
         <div class="info-section">
-            <h3>🏷️ Token Type</h3>
+            <h3>Token Type</h3>
             <p><code>{{ $tokenData['token_type'] }}</code></p>
         </div>
         @endif
@@ -167,7 +167,7 @@
         </div>
 
         <div class="info-section">
-            <h3>🔗 API Verwendung</h3>
+            <h3>API Verwendung</h3>
             <p><strong>Base URL:</strong> <code>https://api.passolution.eu/api/v2</code></p>
             <p><strong>Authorization Header:</strong></p>
             <div class="token-container">
