@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use App\Mail\OAuth2TokenMail;
 
@@ -30,59 +31,79 @@ class OAuth2FlowController extends Controller
      */
     public function generateAuthUrl(Request $request): JsonResponse
     {
-        $request->validate([
-            'client_id' => 'required|string',
-            'redirect_uri' => 'required|url',
-            'authorization_endpoint' => 'required|url',
-            'scope' => 'nullable|string',
-        ]);
+        try {
+            $request->validate([
+                'client_id' => 'required|string',
+                'redirect_uri' => 'required|url',
+                'authorization_endpoint' => 'required|url',
+                'scope' => 'nullable|string',
+            ]);
 
-        $state = Str::random(32);
-        $codeVerifier = Str::random(128);
-        $codeChallenge = rtrim(strtr(base64_encode(hash('sha256', $codeVerifier, true)), '+/', '-_'), '=');
+            $state = Str::random(32);
+            $codeVerifier = Str::random(128);
+            $codeChallenge = rtrim(strtr(base64_encode(hash('sha256', $codeVerifier, true)), '+/', '-_'), '=');
 
-        $params = [
-            'response_type' => 'code',
-            'client_id' => $request->client_id,
-            'redirect_uri' => $request->redirect_uri,
-            'state' => $state,
-            'code_challenge' => $codeChallenge,
-            'code_challenge_method' => 'S256',
-        ];
-
-        // Nur Scope hinzufügen wenn angegeben
-        if (!empty($request->scope)) {
-            $params['scope'] = $request->scope;
-        }
-
-        $authUrl = $request->authorization_endpoint . '?' . http_build_query($params);
-
-        // Store in session for this flow
-        session([
-            'oauth2_flow' => [
+            $params = [
+                'response_type' => 'code',
                 'client_id' => $request->client_id,
-                'client_secret' => $request->client_secret,
                 'redirect_uri' => $request->redirect_uri,
-                'token_endpoint' => $request->token_endpoint,
-                'authorization_endpoint' => $request->authorization_endpoint,
+                'state' => $state,
+                'code_challenge' => $codeChallenge,
+                'code_challenge_method' => 'S256',
+            ];
+
+            // Nur Scope hinzufügen wenn angegeben
+            if (!empty($request->scope)) {
+                $params['scope'] = $request->scope;
+            }
+
+            $authUrl = $request->authorization_endpoint . '?' . http_build_query($params);
+
+            // Store in session for this flow
+            session([
+                'oauth2_flow' => [
+                    'client_id' => $request->client_id,
+                    'client_secret' => $request->client_secret,
+                    'redirect_uri' => $request->redirect_uri,
+                    'token_endpoint' => $request->token_endpoint,
+                    'authorization_endpoint' => $request->authorization_endpoint,
+                    'state' => $state,
+                    'code_verifier' => $codeVerifier,
+                    'code_challenge' => $codeChallenge,
+                    'scope' => $request->scope ?? '',
+                    'provider' => $this->detectProvider($request->authorization_endpoint),
+                ]
+            ]);
+
+            Log::info('OAuth2: Authorization URL generated', [
+                'client_id' => $request->client_id,
+                'provider' => $this->detectProvider($request->authorization_endpoint),
+                'scope' => $request->scope ?? 'none'
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'auth_url' => $authUrl,
                 'state' => $state,
                 'code_verifier' => $codeVerifier,
                 'code_challenge' => $codeChallenge,
-                'scope' => $request->scope ?? '',
-                'provider' => $this->detectProvider($request->authorization_endpoint),
-            ]
-        ]);
+                'step' => 1,
+                'message' => 'Authorization URL erfolgreich generiert',
+                'provider' => $this->detectProvider($request->authorization_endpoint)
+            ]);
 
-        return response()->json([
-            'success' => true,
-            'auth_url' => $authUrl,
-            'state' => $state,
-            'code_verifier' => $codeVerifier,
-            'code_challenge' => $codeChallenge,
-            'step' => 1,
-            'message' => 'Authorization URL erfolgreich generiert',
-            'provider' => $this->detectProvider($request->authorization_endpoint)
-        ]);
+        } catch (\Exception $e) {
+            Log::error('OAuth2: Authorization URL generation failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Fehler beim Generieren der Authorization URL: ' . $e->getMessage(),
+                'step' => 1
+            ], 500);
+        }
     }
 
     /**
@@ -90,31 +111,55 @@ class OAuth2FlowController extends Controller
      */
     public function handleCallback(Request $request): JsonResponse
     {
-        $request->validate([
-            'authorization_code' => 'required|string',
-            'state' => 'required|string',
-        ]);
+        try {
+            $request->validate([
+                'authorization_code' => 'required|string',
+                'state' => 'required|string',
+            ]);
 
-        $flowData = session('oauth2_flow');
-        
-        if (!$flowData || $flowData['state'] !== $request->state) {
+            $flowData = session('oauth2_flow');
+            
+            Log::info('OAuth2: Handling callback', [
+                'has_flow_data' => !empty($flowData),
+                'provided_state' => $request->state,
+                'session_state' => $flowData['state'] ?? 'missing'
+            ]);
+
+            if (!$flowData || $flowData['state'] !== $request->state) {
+                Log::warning('OAuth2: State parameter validation failed');
+                
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Invalid state parameter - Security check failed',
+                    'step' => 2
+                ], 400);
+            }
+
+            // Store the authorization code
+            session(['oauth2_flow.authorization_code' => $request->authorization_code]);
+
+            Log::info('OAuth2: Authorization code stored successfully');
+
+            return response()->json([
+                'success' => true,
+                'authorization_code' => $request->authorization_code,
+                'state_verified' => true,
+                'step' => 2,
+                'message' => 'Authorization Code empfangen und State-Parameter verifiziert'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('OAuth2: Callback handling failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
             return response()->json([
                 'success' => false,
-                'error' => 'Invalid state parameter - Security check failed',
+                'error' => 'Fehler beim Verarbeiten des Callbacks: ' . $e->getMessage(),
                 'step' => 2
-            ], 400);
+            ], 500);
         }
-
-        // Store the authorization code
-        session(['oauth2_flow.authorization_code' => $request->authorization_code]);
-
-        return response()->json([
-            'success' => true,
-            'authorization_code' => $request->authorization_code,
-            'state_verified' => true,
-            'step' => 2,
-            'message' => 'Authorization Code empfangen und State-Parameter verifiziert'
-        ]);
     }
 
     /**
@@ -122,22 +167,42 @@ class OAuth2FlowController extends Controller
      */
     public function exchangeCodeForTokens(Request $request): JsonResponse
     {
-        $flowData = session('oauth2_flow');
-        
-        if (!$flowData || !isset($flowData['authorization_code'])) {
-            return response()->json([
-                'success' => false,
-                'error' => 'Kein Authorization Code in der Session gefunden',
-                'step' => 3
-            ], 400);
-        }
-
         try {
+            $flowData = session('oauth2_flow');
+            
+            Log::info('OAuth2: Starting token exchange', [
+                'has_flow_data' => !empty($flowData),
+                'has_auth_code' => !empty($flowData['authorization_code'] ?? null),
+                'simulate' => $request->simulate ?? false
+            ]);
+
+            if (!$flowData) {
+                Log::error('OAuth2: No flow data in session');
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Keine OAuth2 Flow-Daten in der Session gefunden',
+                    'step' => 3
+                ], 400);
+            }
+
+            if (!isset($flowData['authorization_code'])) {
+                Log::error('OAuth2: No authorization code in session');
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Kein Authorization Code in der Session gefunden',
+                    'step' => 3
+                ], 400);
+            }
+
             // Simulate token exchange (in real scenario, this would be a real API call)
             if ($request->has('simulate') && $request->simulate) {
+                Log::info('OAuth2: Using simulation mode');
+                
                 // Simulate successful token exchange
                 $tokens = $this->simulateTokenResponse($flowData['provider'] ?? 'passolution');
             } else {
+                Log::info('OAuth2: Making real API call to token endpoint');
+                
                 // Make real API call to token endpoint
                 $tokenData = [
                     'grant_type' => 'authorization_code',
@@ -148,11 +213,24 @@ class OAuth2FlowController extends Controller
                     'code_verifier' => $flowData['code_verifier'],
                 ];
 
+                Log::info('OAuth2: Token request data', [
+                    'endpoint' => $flowData['token_endpoint'],
+                    'grant_type' => $tokenData['grant_type'],
+                    'client_id' => $tokenData['client_id'],
+                    'redirect_uri' => $tokenData['redirect_uri'],
+                    'has_code' => !empty($tokenData['code']),
+                    'has_code_verifier' => !empty($tokenData['code_verifier']),
+                    'has_client_secret' => !empty($tokenData['client_secret'])
+                ]);
+
                 // Spezielle Header für Passolution
-                $headers = [];
+                $headers = [
+                    'Accept' => 'application/json',
+                    'User-Agent' => 'OAuth2-Flow-Visualizer/1.0'
+                ];
+
                 if (str_contains($flowData['token_endpoint'], 'passolution')) {
-                    $headers['Accept'] = 'application/json';
-                    $headers['User-Agent'] = 'OAuth2-Flow-Visualizer/1.0';
+                    $headers['Content-Type'] = 'application/x-www-form-urlencoded';
                 }
 
                 $response = Http::asForm()
@@ -160,17 +238,41 @@ class OAuth2FlowController extends Controller
                     ->timeout(30)
                     ->post($flowData['token_endpoint'], $tokenData);
 
+                Log::info('OAuth2: Token endpoint response', [
+                    'status' => $response->status(),
+                    'headers' => $response->headers(),
+                    'body_preview' => substr($response->body(), 0, 200)
+                ]);
+
                 if (!$response->successful()) {
                     $errorBody = $response->json();
+                    
+                    Log::error('OAuth2: Token exchange failed', [
+                        'status' => $response->status(),
+                        'error_body' => $errorBody,
+                        'full_response' => $response->body()
+                    ]);
+
                     return response()->json([
                         'success' => false,
-                        'error' => 'Token exchange failed: ' . ($errorBody['error_description'] ?? $response->body()),
+                        'error' => 'Token exchange failed: ' . ($errorBody['error_description'] ?? $errorBody['message'] ?? $response->body()),
                         'step' => 3,
-                        'http_status' => $response->status()
+                        'http_status' => $response->status(),
+                        'debug_info' => [
+                            'endpoint' => $flowData['token_endpoint'],
+                            'response_body' => $response->body()
+                        ]
                     ], 400);
                 }
 
                 $tokens = $response->json();
+                
+                Log::info('OAuth2: Tokens received successfully', [
+                    'token_type' => $tokens['token_type'] ?? 'unknown',
+                    'has_access_token' => !empty($tokens['access_token']),
+                    'has_refresh_token' => !empty($tokens['refresh_token']),
+                    'expires_in' => $tokens['expires_in'] ?? 'not_specified'
+                ]);
             }
 
             // Store tokens in session (temporary)
@@ -185,6 +287,11 @@ class OAuth2FlowController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            Log::error('OAuth2: Token exchange exception', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
             return response()->json([
                 'success' => false,
                 'error' => 'Token exchange failed: ' . $e->getMessage(),
@@ -198,17 +305,17 @@ class OAuth2FlowController extends Controller
      */
     public function refreshToken(Request $request): JsonResponse
     {
-        $flowData = session('oauth2_flow');
-        
-        if (!$flowData || !isset($flowData['tokens']['refresh_token'])) {
-            return response()->json([
-                'success' => false,
-                'error' => 'Kein Refresh Token verfügbar',
-                'step' => 4
-            ], 400);
-        }
-
         try {
+            $flowData = session('oauth2_flow');
+            
+            if (!$flowData || !isset($flowData['tokens']['refresh_token'])) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Kein Refresh Token verfügbar',
+                    'step' => 4
+                ], 400);
+            }
+
             if ($request->has('simulate') && $request->simulate) {
                 // Simulate refresh token response
                 $newTokens = $this->simulateRefreshTokenResponse($flowData['provider'] ?? 'passolution');
@@ -222,10 +329,13 @@ class OAuth2FlowController extends Controller
                 ];
 
                 // Spezielle Header für Passolution
-                $headers = [];
+                $headers = [
+                    'Accept' => 'application/json',
+                    'User-Agent' => 'OAuth2-Flow-Visualizer/1.0'
+                ];
+
                 if (str_contains($flowData['token_endpoint'], 'passolution')) {
-                    $headers['Accept'] = 'application/json';
-                    $headers['User-Agent'] = 'OAuth2-Flow-Visualizer/1.0';
+                    $headers['Content-Type'] = 'application/x-www-form-urlencoded';
                 }
 
                 $response = Http::asForm()
@@ -256,6 +366,10 @@ class OAuth2FlowController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            Log::error('OAuth2: Token refresh failed', [
+                'error' => $e->getMessage()
+            ]);
+
             return response()->json([
                 'success' => false,
                 'error' => 'Token refresh failed: ' . $e->getMessage(),
@@ -269,16 +383,16 @@ class OAuth2FlowController extends Controller
      */
     public function testApiCall(Request $request): JsonResponse
     {
-        $flowData = session('oauth2_flow');
-        
-        if (!$flowData || !isset($flowData['tokens']['access_token'])) {
-            return response()->json([
-                'success' => false,
-                'error' => 'Kein Access Token verfügbar'
-            ], 400);
-        }
-
         try {
+            $flowData = session('oauth2_flow');
+            
+            if (!$flowData || !isset($flowData['tokens']['access_token'])) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Kein Access Token verfügbar'
+                ], 400);
+            }
+
             $accessToken = $flowData['tokens']['access_token'];
             $provider = $flowData['provider'] ?? 'unknown';
             
@@ -423,13 +537,13 @@ class OAuth2FlowController extends Controller
                 'email' => 'demo@passolution.de',
                 'iat' => time(),
                 'exp' => time() + 3600,
-                'scope' => 'read write',
+                'scope' => 'default',
                 'provider' => $provider
             ])) . '.signature_demo',
             'token_type' => 'Bearer',
             'expires_in' => 3600,
             'refresh_token' => 'rt_' . Str::random(40),
-            'scope' => 'read write'
+            'scope' => 'default'
         ];
 
         // Provider-spezifische Anpassungen
@@ -453,12 +567,12 @@ class OAuth2FlowController extends Controller
                 'email' => 'demo@passolution.de',
                 'iat' => time(),
                 'exp' => time() + 3600,
-                'scope' => 'read write',
+                'scope' => 'default',
                 'provider' => $provider
             ])) . '.new_signature_demo',
             'token_type' => 'Bearer',
             'expires_in' => 3600,
-            'scope' => 'read write'
+            'scope' => 'default'
         ];
 
         if ($provider === 'passolution') {

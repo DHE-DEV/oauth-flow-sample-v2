@@ -12,6 +12,7 @@ Route::prefix('oauth2')->name('oauth2.')->group(function () {
     Route::post('/handle-callback', [OAuth2FlowController::class, 'handleCallback'])->name('handle-callback');
     Route::post('/exchange-tokens', [OAuth2FlowController::class, 'exchangeCodeForTokens'])->name('exchange-tokens');
     Route::post('/refresh-token', [OAuth2FlowController::class, 'refreshToken'])->name('refresh-token');
+    Route::post('/test-api', [OAuth2FlowController::class, 'testApiCall'])->name('test-api');
     Route::post('/send-email', [OAuth2FlowController::class, 'sendTokensEmail'])->name('send-email');
     Route::get('/flow-data', [OAuth2FlowController::class, 'getFlowData'])->name('flow-data');
     Route::post('/reset', [OAuth2FlowController::class, 'resetFlow'])->name('reset');
